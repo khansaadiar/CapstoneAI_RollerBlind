@@ -1,0 +1,79 @@
+esphome:
+  name: roller_blind
+  friendly_name: roller_blind
+
+esp8266:
+  board: d1_mini
+
+wifi:
+  ssid: "ITS-WIFI-TW2"
+  password: "itssurabaya"
+
+  ap:
+    ssid: "myITS-WIFI"
+    password: "itssurabaya"
+
+captive_portal:
+
+logger:
+
+api:
+  password: ""
+
+ota:
+  - platform: esphome
+    password: ""
+
+# Stepper motor config
+stepper:
+  - platform: uln2003
+    id: motor_gorden
+    pin_a: D8
+    pin_b: D7
+    pin_c: D6
+    pin_d: D5
+    max_speed: 300.0
+    acceleration: 150.0
+    deceleration: 150.0
+    step_mode: FULL_STEP
+    sleep_when_done: true
+
+# posisi motor
+sensor:
+  - platform: template
+    name: "Posisi Gorden"
+    lambda: |-
+      return id(motor_gorden).current_position;
+    update_interval: 2s
+
+# Input panjang dari pengguna
+number:
+  - platform: template
+    name: "Panjang Gorden (cm)"
+    id: panjang_gorden_cm
+    min_value: 10
+    max_value: 95
+    step: 5
+    initial_value: 100
+    restore_value: true
+    optimistic: true
+
+cover:
+  - platform: template
+    name: "Gorden Otomatis"
+    id: gorden
+    open_action:
+      - stepper.set_target:
+          id: motor_gorden
+          target: 0
+    close_action:
+      - stepper.set_target:
+          id: motor_gorden
+          target: !lambda |-
+            return -1 * (int)(id(panjang_gorden_cm).state * 356);
+    stop_action:
+      - stepper.set_target:
+          id: motor_gorden
+          target: !lambda 'return id(motor_gorden).current_position;'
+    optimistic: true
+    assumed_state: true
